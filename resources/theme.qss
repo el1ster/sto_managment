@@ -1,0 +1,164 @@
+/* theme.qss — Строгая тёмная тема с современным акцентом */
+
+/* === Базовые параметры === */
+QWidget {
+    background: #2A3132;
+    color: #90AFC5;
+    font-family: 'Roboto Condensed', Arial, sans-serif;
+    font-size: 15px;
+}
+
+/* === Диалоговые окна === */
+QDialog {
+    background: #2A3132;
+    border-radius: 6px;
+    color: #90AFC5;
+}
+
+/* === Кнопки === */
+QPushButton {
+    background: #763626;
+    color: #90AFC5;
+    border: none;
+    border-radius: 4px;
+    padding: 7px 20px;
+    font-weight: 500;
+    min-width: 100px;
+    font-family: 'Roboto Condensed', Arial, sans-serif;
+    font-size: 15px;
+    margin: 0 6px 0 0;
+    transition: background 0.18s;
+}
+QPushButton:hover, QPushButton:focus {
+    background: #90AFC5;
+    color: #763626;
+}
+QPushButton:pressed {
+    background: #2A3132;
+    color: #763626;
+}
+QPushButton:disabled {
+    background: #444D4E;
+    color: #BAC9D2;
+}
+
+/* === Текстовые поля === */
+QLineEdit, QTextEdit {
+    background: #232829;
+    border: 1.3px solid #90AFC5;
+    border-radius: 4px;
+    padding: 6px 12px;
+    color: #90AFC5;
+    font-family: 'Roboto Condensed', Arial, sans-serif;
+    font-size: 15px;
+}
+QLineEdit:focus, QTextEdit:focus {
+    border: 1.5px solid #763626;
+    background: #2A3132;
+    color: #90AFC5;
+}
+
+/* === Метки === */
+QLabel {
+    background: transparent;
+    color: #90AFC5;
+}
+
+/* === Вкладки (TabBar / TabWidget) === */
+QTabWidget::pane {
+    background: #232829;
+    border-radius: 4px;
+    margin-top: 3px;
+}
+
+QTabBar {
+    background: #232829;
+    border: none;
+    padding-left: 4px;
+}
+
+QTabBar::tab {
+    background: #232829;
+    color: #90AFC5;
+    border: 1.5px solid transparent;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    min-width: 74px;
+    min-height: 24px;
+    padding: 4px 10px 4px 10px;
+    margin-right: 2px;
+    font-weight: 500;
+    font-size: 14px;
+    transition: background 0.18s, color 0.18s;
+}
+QTabBar::tab:selected, QTabBar::tab:hover {
+    background: #763626;
+    color: #90AFC5;
+    font-size: 14.5px;
+    font-weight: 600;
+    border: 1.5px solid #90AFC5;
+    margin-bottom: -1px;
+    z-index: 10;
+}
+QTabBar::tab:!selected {
+    background: #232829;
+    color: #90AFC5;
+    border: none;
+}
+
+/* === Таблицы === */
+QTableView {
+    background: #2A3132;
+    color: #90AFC5;
+    border: 1px solid #763626;
+    border-radius: 4px;
+    selection-background-color: #763626;
+    selection-color: #90AFC5;
+    gridline-color: #90AFC5;
+}
+QHeaderView::section {
+    background: #232829;
+    color: #90AFC5;
+    font-weight: 700;
+    font-size: 15px;
+    border: none;
+    border-bottom: 2px solid #763626;
+    padding: 7px 10px;
+}
+
+/* === Чекбоксы и радиокнопки === */
+QCheckBox, QRadioButton {
+    font-size: 15px;
+    color: #90AFC5;
+    padding: 3px 0;
+}
+QCheckBox::indicator, QRadioButton::indicator {
+    border: 1.2px solid #763626;
+    background: #232829;
+    border-radius: 2px;
+    width: 14px;
+    height: 14px;
+}
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {
+    background: #763626;
+    border: 1.2px solid #90AFC5;
+}
+
+/* === Выпадающие списки === */
+QComboBox {
+    background: #232829;
+    border: 1.2px solid #90AFC5;
+    border-radius: 4px;
+    padding: 6px 12px;
+    color: #90AFC5;
+}
+QComboBox QAbstractItemView {
+    background: #232829;
+    color: #90AFC5;
+    selection-background-color: #763626;
+}
+
+QWidget, QPushButton, QLabel, QLineEdit, QTextEdit {
+    font-family: 'Roboto Condensed', Arial, sans-serif;
+    font-size: 15px;
+}

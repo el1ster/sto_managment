@@ -12,9 +12,10 @@ class TasksLoaderThread(QThread):
             self.data_loaded.emit([])
 
 class TasksTab(QWidget):
-    def __init__(self, current_user):
+    def __init__(self, current_user, main_window=None):
         super().__init__()
         self.current_user = current_user
+        self.main_window = main_window
 
         layout = QVBoxLayout()
         self.refresh_button = QPushButton("Оновити задачі")
