@@ -1,28 +1,33 @@
-from peewee import Model, CharField, ForeignKeyField, DateField, TextField, BooleanField
-from models.db import db
-from models.employee import Employee
-from models.vehicle import Vehicle
+from peewee import (
+    Model, CharField, FloatField, DateTimeField, IntegerField, ForeignKeyField, BooleanField
+)
+from models.db import db  # Импортируй свою инициализацию базы данных
+
 
 class Task(Model):
     """
-    Завдання/робота.
+    Модель завдання (tasks) — з повним відображенням таблиці.
 
-    Args:
-        title (str): Назва завдання.
-        description (str): Опис.
-        employee (Employee): Виконавець.
-        vehicle (Vehicle): Транспорт.
-        deadline (date): Дедлайн.
-        status (str): Статус ("нове", "в роботі", "завершено").
-        is_active (bool): Актуальне/архів.
+    Fields:
+        id (int): Первинний ключ.
+        name (str): Назва завдання, не порожня.
+        time_required (float): Необхідний час (години).
+        status (str): Статус виконання (наприклад, 'pending').
+        archived_at (datetime): Дата архівації (не NULL).
+        specialization (str): Спеціалізація (наприклад, "електрика").
+        in_queue (bool/int): Чи знаходиться в черзі (1 або 0).
+        vehicle_id (int): Зв’язок з автомобілем.
+        maintenance_id (int): Зв’язок із записом обслуговування.
     """
-    title = CharField(max_length=100)
-    description = TextField(null=True)
-    employee = ForeignKeyField(Employee, backref="tasks", column_name="employee_id")
-    vehicle = ForeignKeyField(Vehicle, backref="tasks", column_name="vehicle_id", null=True)
-    deadline = DateField(null=True)
-    status = CharField(max_length=30, default="нове")
-    is_active = BooleanField(default=True)
+
+    name = CharField(max_length=100, null=False)
+    time_required = FloatField(null=False)
+    status = CharField(max_length=50, default='pending', null=False)
+    archived_at = DateTimeField(null=False)  # Якщо поле може бути NULL, додай null=True
+    specialization = CharField(max_length=255, null=False)
+    in_queue = BooleanField(null=False, default=True)  # Можна і як IntegerField, якщо хочеш 0/1
+    vehicle_id = IntegerField(null=False)
+    maintenance_id = IntegerField(null=False)
 
     class Meta:
         database = db

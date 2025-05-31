@@ -5,6 +5,9 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from models.employee import Employee
 from models.employee_position import EmployeePosition
+from gui.dialogs.edit_employee_dialog import EditEmployeeDialog
+from logic.validators import validate_full_name
+from gui.dialogs.employee_card_dialog import EmployeeCardDialog
 
 
 class EmployeesLoaderThread(QThread):
@@ -75,6 +78,7 @@ class EmployeesTab(QWidget):
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.doubleClicked.connect(self.show_employee_card)
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
@@ -150,8 +154,9 @@ class EmployeesTab(QWidget):
         if not emp:
             QMessageBox.warning(self, "Помилка", "Оберіть працівника для редагування.")
             return
-        # TODO: імплементувати діалог редагування працівника (аналог EditUserDialog)
-        QMessageBox.information(self, "Заглушка", f"Діалог редагування працівника {emp.full_name} не реалізовано.")
+        dlg = EditEmployeeDialog(emp, self)
+        if dlg.exec():
+            self.load_employees()
 
     def delete_employee_dialog(self):
         emp = self.get_selected_employee()
@@ -168,3 +173,10 @@ class EmployeesTab(QWidget):
                 self.load_employees()
             except Exception as ex:
                 QMessageBox.critical(self, "Помилка", f"Не вдалося видалити працівника:\n{ex}")
+
+    def show_employee_card(self, index):
+        emp = self.get_selected_employee()
+        if not emp:
+            return
+        dlg = EmployeeCardDialog(emp, self)
+        dlg.exec()

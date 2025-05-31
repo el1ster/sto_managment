@@ -5,7 +5,9 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QDate
 from models.employee import Employee
 from models.employee_position import EmployeePosition
-
+from logic.validators import (
+    validate_full_name, validate_phone, validate_email, validate_hire_date
+)
 
 class AddEmployeeDialog(QDialog):
     """
@@ -50,23 +52,7 @@ class AddEmployeeDialog(QDialog):
         layout.addWidget(self.save_btn)
         self.setLayout(layout)
 
-    def validate_name(self, full_name: str) -> bool:
-        """
-        Перевіряє, що ПІБ не порожній і складається з принаймні двох слів.
-        """
-        return bool(re.match(r"^[А-ЯІЄЇҐA-Z][а-яіїєґa-zA-Z'`’\- ]{2,}$", full_name)) and len(full_name.split()) >= 2
 
-    def validate_phone(self, phone: str) -> bool:
-        """
-        Перевіряє, що телефон у форматі +380XXXXXXXXX або 0XXXXXXXXX.
-        """
-        return bool(re.match(r"^(?:\+380|0)\d{9}$", phone))
-
-    def validate_email(self, email: str) -> bool:
-        """
-        Перевіряє email за простим шаблоном.
-        """
-        return bool(re.match(r"^[\w\.-]+@[\w\.-]+\.\w{2,}$", email))
 
     def add_employee(self):
         full_name = self.name_edit.text().strip()
@@ -76,25 +62,13 @@ class AddEmployeeDialog(QDialog):
         position = self.positions[self.position_combo.currentIndex()]
         is_active = self.active_checkbox.isChecked()
 
-        # Перевірка ПІБ
-        if not self.validate_name(full_name):
-            QMessageBox.warning(self, "Помилка",
-                                "Введіть коректний ПІБ (мінімум ім'я та прізвище українською чи латинкою).")
+        if not validate_full_name(full_name, parent=self):
             return
-
-        # Перевірка телефону
-        if not self.validate_phone(phone):
-            QMessageBox.warning(self, "Помилка", "Введіть коректний телефон у форматі +380XXXXXXXXX або 0XXXXXXXXX.")
+        if not validate_phone(phone, parent=self):
             return
-
-        # Перевірка email
-        if not self.validate_email(email):
-            QMessageBox.warning(self, "Помилка", "Введіть коректний email (наприклад, name@gmail.com).")
+        if not validate_email(email, parent=self):
             return
-
-        # Дата прийому не може бути у майбутньому
-        if hire_date > QDate.currentDate().toPyDate():
-            QMessageBox.warning(self, "Помилка", "Дата прийому не може бути у майбутньому.")
+        if not validate_hire_date(hire_date, parent=self):
             return
 
         # Перевірка унікальності (email і телефон не повинні дублюватися)
