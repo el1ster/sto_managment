@@ -1,33 +1,59 @@
 from peewee import (
-    Model, CharField, FloatField, DateTimeField, IntegerField, ForeignKeyField, BooleanField
+    Model,
+    CharField,
+    FloatField,
+    DateTimeField,
+    BooleanField,
+    ForeignKeyField
 )
-from models.db import db  # Импортируй свою инициализацию базы данных
+from models.db import db
+from models.vehicle import Vehicle
+from models.maintenance_record import MaintenanceRecord
 
 
 class Task(Model):
     """
-    Модель завдання (tasks) — з повним відображенням таблиці.
+    Завдання на виконання обслуговування.
 
-    Fields:
-        id (int): Первинний ключ.
-        name (str): Назва завдання, не порожня.
-        time_required (float): Необхідний час (години).
+    Args:
+        name (str): Назва завдання.
+        time_required (float): Очікувана тривалість виконання (години).
         status (str): Статус виконання (наприклад, 'pending').
-        archived_at (datetime): Дата архівації (не NULL).
-        specialization (str): Спеціалізація (наприклад, "електрика").
-        in_queue (bool/int): Чи знаходиться в черзі (1 або 0).
-        vehicle_id (int): Зв’язок з автомобілем.
-        maintenance_id (int): Зв’язок із записом обслуговування.
-    """
+        archived_at (datetime): Дата архівації.
+        specialization (str): Спеціалізація виконавця (наприклад, "електрика").
+        in_queue (bool): Чи знаходиться завдання в черзі.
+        vehicle (Vehicle): Автомобіль, до якого належить завдання.
+        maintenance (MaintenanceRecord): Запис обслуговування, в рамках якого створено завдання.
 
-    name = CharField(max_length=100, null=False)
-    time_required = FloatField(null=False)
-    status = CharField(max_length=50, default='pending', null=False)
-    archived_at = DateTimeField(null=False)  # Якщо поле може бути NULL, додай null=True
-    specialization = CharField(max_length=255, null=False)
-    in_queue = BooleanField(null=False, default=True)  # Можна і як IntegerField, якщо хочеш 0/1
-    vehicle_id = IntegerField(null=False)
-    maintenance_id = IntegerField(null=False)
+    Returns:
+        Task: Об'єкт завдання.
+
+    Raises:
+        peewee.IntegrityError: У випадку порушення зв'язків vehicle або maintenance.
+    """
+    name: str = CharField(max_length=100)
+
+    time_required: float = FloatField()
+
+    status: str = CharField(max_length=50, default="pending")
+
+    is_archived: bool = BooleanField(default=False)
+
+    specialization: str = CharField(max_length=255)
+
+    in_queue: bool = BooleanField(default=True)
+
+    vehicle: Vehicle = ForeignKeyField(
+        Vehicle,
+        backref="tasks",
+        column_name="vehicle_id"
+    )
+
+    maintenance: MaintenanceRecord = ForeignKeyField(
+        MaintenanceRecord,
+        backref="tasks",
+        column_name="maintenance_id"
+    )
 
     class Meta:
         database = db

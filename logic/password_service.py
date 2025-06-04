@@ -20,7 +20,6 @@ def hash_password(password: str) -> str:
     Raises:
         ValueError: Якщо пароль не відповідає мінімальним вимогам безпеки.
     """
-    # Тут можна додати додаткову перевірку складності пароля (довжина, спецсимволи)
     if not password or len(password) < 6:
         raise ValueError("Пароль повинен містити не менше 6 символів.")
     return pbkdf2_sha256.hash(password)
@@ -35,9 +34,9 @@ def verify_password(password: str, password_hash: str) -> bool:
         password_hash (str): Хеш пароля із БД.
 
     Returns:
-        bool: True — якщо пароль вірний, False — якщо не співпадає.
-
-    Raises:
-        Exception: Якщо перевірка не може бути виконана (наприклад, помилковий хеш).
+        bool: True — якщо пароль вірний, False — якщо не співпадає або помилка.
     """
-    return pbkdf2_sha256.verify(password, password_hash)
+    try:
+        return pbkdf2_sha256.verify(password, password_hash)
+    except Exception:
+        return False

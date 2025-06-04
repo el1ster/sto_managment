@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QMessageBox
 )
 from models.tax import Tax
+from logic.validators import validate_tax_name
 
 
 class AddTaxDialog(QDialog):
@@ -16,42 +17,47 @@ class AddTaxDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Додати новий податок")
-        self.setMinimumSize(400, 300)
 
-        layout = QVBoxLayout()
+        try:
+            self.setWindowTitle("Додати новий податок")
+            self.setMinimumSize(400, 300)
 
-        self.name_input = QLineEdit()
-        layout.addLayout(self._row("Назва податку:", self.name_input))
+            layout = QVBoxLayout()
 
-        self.type_input = QComboBox()
-        self.type_input.addItems(["прибутковий", "соціальний", "екологічний", "інше"])
-        layout.addLayout(self._row("Тип:", self.type_input))
+            self.name_input = QLineEdit()
+            layout.addLayout(self._row("Назва податку:", self.name_input))
 
-        self.rate_input = QDoubleSpinBox()
-        self.rate_input.setRange(0, 1_000_000)
-        self.rate_input.setDecimals(2)
-        layout.addLayout(self._row("Ставка:", self.rate_input))
+            self.type_input = QComboBox()
+            self.type_input.addItems(["прибутковий", "соціальний", "екологічний", "інше"])
+            layout.addLayout(self._row("Тип:", self.type_input))
 
-        self.percent_checkbox = QCheckBox("Відсоткова ставка (%)")
-        layout.addWidget(self.percent_checkbox)
+            self.rate_input = QDoubleSpinBox()
+            self.rate_input.setRange(0, 1_000_000)
+            self.rate_input.setDecimals(2)
+            layout.addLayout(self._row("Ставка:", self.rate_input))
 
-        self.applies_to_input = QComboBox()
-        self.applies_to_input.addItems(["зарплата", "транспорт"])
-        layout.addLayout(self._row("Сфера:", self.applies_to_input))
+            self.percent_checkbox = QCheckBox("Відсоткова ставка (%)")
+            layout.addWidget(self.percent_checkbox)
 
-        self.payer_input = QComboBox()
-        self.payer_input.addItems(["employee", "employer"])
-        layout.addLayout(self._row("Платник:", self.payer_input))
+            self.applies_to_input = QComboBox()
+            self.applies_to_input.addItems(["зарплата", "транспорт"])
+            layout.addLayout(self._row("Сфера:", self.applies_to_input))
 
-        self.active_checkbox = QCheckBox("Активний")
-        layout.addWidget(self.active_checkbox)
+            self.payer_input = QComboBox()
+            self.payer_input.addItem("працівник", userData="employee")
+            self.payer_input.addItem("підприємство", userData="employer")
+            layout.addLayout(self._row("Платник:", self.payer_input))
 
-        add_button = QPushButton("Додати")
-        add_button.clicked.connect(self.add_tax)
-        layout.addWidget(add_button)
+            self.active_checkbox = QCheckBox("Активний")
+            layout.addWidget(self.active_checkbox)
 
-        self.setLayout(layout)
+            add_button = QPushButton("Додати")
+            add_button.clicked.connect(self.add_tax)
+            layout.addWidget(add_button)
+
+            self.setLayout(layout)
+        except Exception as e:
+            QMessageBox.critical(self, "Помилка", f"Помилка ініціалізації форми: {e}")
 
     def _row(self, label_text: str, widget) -> QHBoxLayout:
         """
@@ -74,20 +80,23 @@ class AddTaxDialog(QDialog):
         Обробник натискання кнопки "Додати".
         Перевіряє валідність введених даних і створює запис у базі.
         """
-        name = self.name_input.text().strip()
-        if not name:
-            QMessageBox.warning(self, "Помилка", "Введіть назву податку.")
-            return
 
-        Tax.create(
-            tax_name=name,
-            tax_type=self.type_input.currentText(),
-            rate=self.rate_input.value(),
-            is_percent=self.percent_checkbox.isChecked(),
-            applies_to=self.applies_to_input.currentText(),
-            payer=self.payer_input.currentText(),
-            is_active=self.active_checkbox.isChecked()
-        )
+        try:
+            name = self.name_input.text().strip()
+            if not validate_tax_name(name, parent=self):
+                return
+            Tax.create(
+                tax_name=name,
+                tax_type=self.type_input.currentText(),
+                rate=self.rate_input.value(),
+                is_percent=self.percent_checkbox.isChecked(),
+                applies_to=self.applies_to_input.currentText(),
+                payer=self.payer_input.currentData(),
+                is_active=self.active_checkbox.isChecked()
+            )
 
-        QMessageBox.information(self, "Успіх", "Податок додано.")
-        self.accept()
+            QMessageBox.information(self, "Успіх", "Податок додано.")
+            self.accept()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Помилка", f"Не вдалося додати податок: {e}")

@@ -1,8 +1,10 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QListWidget
 from PyQt6.QtCore import QThread, pyqtSignal
 
+
 class LogsLoaderThread(QThread):
     data_loaded = pyqtSignal(list)
+
     def run(self):
         try:
             # logs = list(Log.select())
@@ -10,6 +12,7 @@ class LogsLoaderThread(QThread):
             self.data_loaded.emit(logs)
         except Exception:
             self.data_loaded.emit([])
+
 
 class LogsTab(QWidget):
     def __init__(self, current_user, main_window=None):

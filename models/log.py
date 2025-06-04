@@ -2,18 +2,30 @@ from peewee import Model, DateTimeField, CharField, ForeignKeyField
 from models.db import db
 from models.user import User
 
+
 class Log(Model):
     """
-    Журнал дій.
+    Журнал дій користувачів.
 
     Args:
-        user (User): Користувач.
-        action (str): Опис дії.
-        created_at (datetime): Коли виконано.
+        user (User): Користувач, який виконав дію.
+        action (str): Опис дії, яку було виконано.
+        created_at (datetime): Дата й час виконання дії.
+
+    Returns:
+        Log: Об'єкт журналу подій.
+
+    Raises:
+        peewee.IntegrityError: Якщо не існує відповідного користувача.
     """
-    user = ForeignKeyField(User, backref="logs", column_name="user_id")
-    action = CharField(max_length=255)
-    created_at = DateTimeField()
+    user: User = ForeignKeyField(
+        User,
+        backref="logs",
+        column_name="user_id",
+        null=False
+    )
+    action: str = CharField(max_length=255, null=False)
+    created_at: DateTimeField = DateTimeField(null=False)
 
     class Meta:
         database = db

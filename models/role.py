@@ -1,16 +1,24 @@
 from peewee import Model, CharField, TextField
 from models.db import db
 
+
 class UserRole(Model):
     """
-    Довідник ролей користувачів.
+    Роль користувача в системі (довідник).
 
     Args:
-        role_name (str): Назва ролі.
-        description (str): Опис ролі.
+        role_name (str): Назва ролі користувача (унікальна).
+        description (str): Опис ролі (необов’язково).
+
+    Returns:
+        UserRole: Об'єкт довідника ролей.
+
+    Raises:
+        peewee.IntegrityError: Якщо спроба створити неунікальну роль.
     """
-    role_name = CharField(max_length=50, unique=True)
-    description = TextField(null=True)
+    role_name: str = CharField(max_length=50, unique=True)
+
+    description: str = TextField(null=True)
 
     class Meta:
         database = db

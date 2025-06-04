@@ -1,24 +1,42 @@
-from peewee import Model, CharField, DateField, BooleanField, IntegerField
+from peewee import (
+    Model,
+    CharField,
+    IntegerField,
+    DateTimeField,
+    BooleanField
+)
+
 from models.db import db
+
 
 class Vehicle(Model):
     """
-    Транспортний засіб.
+    Транспортний засіб, який обслуговується у СТО.
 
     Args:
-        license_plate (str): Номер.
+        vin (str): VIN-код.
+        number_plate (str): Державний номер.
+        brand (str): Бренд (марка).
         model (str): Модель.
         year (int): Рік випуску.
-        vin (str): VIN-код.
-        purchase_date (date): Дата купівлі.
-        is_active (bool): Активний/списаний.
+        vehicle_type (str): Тип (наприклад, легковий, мікроавтобус...).
+        department (str): Відповідальний підрозділ або місце використання.
+        mileage (int): Поточний пробіг.
+        is_archived (datetime): Дата архівації (якщо неактивний).
+
+    Returns:
+        Vehicle: Об'єкт транспортного засобу.
     """
-    license_plate = CharField(max_length=20, unique=True)
+
+    vin = CharField(max_length=20, unique=True, null=False)
+    number_plate = CharField(max_length=20, unique=True)
+    brand = CharField(max_length=100)
     model = CharField(max_length=100)
     year = IntegerField(null=True)
-    vin = CharField(max_length=50, null=True)
-    purchase_date = DateField(null=True)
-    is_active = BooleanField(default=True)
+    vehicle_type = CharField(max_length=50, null=True)
+    department = CharField(max_length=100, null=True)
+    mileage = IntegerField(null=True)
+    is_archived = BooleanField(default=False)
 
     class Meta:
         database = db

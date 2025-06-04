@@ -19,18 +19,14 @@ def authenticate_user(username: str, password: str) -> User | None:
         password (str): Пароль у відкритому вигляді.
 
     Returns:
-        User | None: Об'єкт User при успішній авторизації, або None.
-
-    Raises:
-        Exception: Якщо виникають проблеми із з'єднанням чи запитом до БД.
+        User | None: Об'єкт користувача, якщо авторизація успішна, або None.
     """
     try:
         user = User.get_or_none(User.username == username)
         if user and verify_password(password, user.password_hash):
             return user
         return None
-    except Exception as ex:
-        print(f"Помилка авторизації: {ex}")
+    except Exception:
         return None
 
 
@@ -39,14 +35,11 @@ def reset_user_password(user_id: int, new_password: str) -> bool:
     Скидає (оновлює) пароль користувача за його ID.
 
     Args:
-        user_id (int): Ідентифікатор користувача в БД.
+        user_id (int): Ідентифікатор користувача у базі даних.
         new_password (str): Новий пароль у відкритому вигляді.
 
     Returns:
-        bool: True — якщо скидання пароля успішне, False — якщо користувача не знайдено або помилка.
-
-    Raises:
-        Exception: Якщо виникають проблеми із з'єднанням чи збереженням у БД.
+        bool: True — якщо пароль успішно оновлено, False — у разі помилки або якщо користувача не знайдено.
     """
     try:
         user = User.get_or_none(User.id == user_id)
@@ -55,6 +48,5 @@ def reset_user_password(user_id: int, new_password: str) -> bool:
         user.password_hash = hash_password(new_password)
         user.save()
         return True
-    except Exception as ex:
-        print(f"Помилка скидання пароля: {ex}")
+    except Exception:
         return False

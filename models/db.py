@@ -1,7 +1,8 @@
 from peewee import MySQLDatabase
 import config
 
-db = MySQLDatabase(
+
+db: MySQLDatabase = MySQLDatabase(
     config.DB_NAME,
     user=config.DB_USER,
     password=config.DB_PASSWORD,
