@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QAbstractItemView, QLineEdit, QLabel, QHeaderView
 )
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
+from datetime import datetime
 from models.user import User
 from models.role import UserRole
 from models.employee import Employee
@@ -11,6 +12,17 @@ from gui.dialogs.reset_password_dialog import ResetPasswordDialog
 from gui.dialogs.edit_user_dialog import EditUserDialog
 from gui.dialogs.admin_confirm_dialog import AdminConfirmDialog
 from gui.dialogs.user_card_dialog import UserCardDialog
+
+
+class DateTimeTableItem(QTableWidgetItem):
+    def __init__(self, display_text: str, dt_value: datetime | None):
+        super().__init__(display_text)
+        self.dt_value = dt_value or datetime.min
+
+    def __lt__(self, other):
+        if isinstance(other, DateTimeTableItem):
+            return self.dt_value < other.dt_value
+        return super().__lt__(other)
 
 
 class UsersLoaderThread(QThread):
@@ -126,15 +138,22 @@ class UsersTab(QWidget):
 
     def show_users(self, users):
         try:
+            self.table.setSortingEnabled(False)
             self.table.setRowCount(len(users))
             for i, user in enumerate(users):
                 self.table.setItem(i, 0, QTableWidgetItem(user.username))
                 role_name = user.role.role_name if user.role else ""
                 self.table.setItem(i, 1, QTableWidgetItem(role_name))
                 self.table.setItem(i, 2, QTableWidgetItem("Активний" if user.is_active else "Деактивований"))
-                self.table.setItem(i, 3, QTableWidgetItem(
-                    user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else "-"
-                ))
+
+                if user.last_login:
+                    display = user.last_login.strftime("%Y-%m-%d %H:%M")
+                    item = DateTimeTableItem(display, user.last_login)
+                else:
+                    item = DateTimeTableItem("-", None)
+                self.table.setItem(i, 3, item)
+
+            self.table.setSortingEnabled(True)
         except Exception as e:
             QMessageBox.critical(self, "Помилка", f"Помилка при відображенні користувачів: {e}")
 
@@ -197,7 +216,6 @@ class UsersTab(QWidget):
                 QMessageBox.warning(self, "Помилка", "Видалити адміністратора може тільки супер-адмін.")
                 return
 
-            # Перевірка зовнішніх зв’язків
             employees = list(Employee.select().where(Employee.user == user))
             if employees:
                 emp_names = "\n • ".join([f"{e.full_name} ({e.position.name})" for e in employees])

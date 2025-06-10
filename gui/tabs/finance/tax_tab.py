@@ -13,6 +13,27 @@ from gui.dialogs.edit_tax_dialog import EditTaxDialog
 from logic.helpers import translate_payer
 
 
+class FloatTableItem(QTableWidgetItem):
+    def __init__(self, display_text: str, value: float):
+        super().__init__(display_text)
+        self.value = value
+
+    def __lt__(self, other):
+        if isinstance(other, FloatTableItem):
+            return self.value < other.value
+        return super().__lt__(other)
+
+
+class BoolTableItem(QTableWidgetItem):
+    def __init__(self, display_text: str, value: bool):
+        super().__init__(display_text)
+        self.value = value
+
+    def __lt__(self, other):
+        if isinstance(other, BoolTableItem):
+            return self.value < other.value
+        return super().__lt__(other)
+
 class TaxViewTab(QWidget):
     """
     Вкладка для перегляду довідника податків та груп податків.
@@ -123,10 +144,10 @@ class TaxViewTab(QWidget):
             ])
             self.tax_table.setItem(row_idx, 0, QTableWidgetItem(tax.tax_name))
             self.tax_table.setItem(row_idx, 1, QTableWidgetItem(tax.tax_type))
-            self.tax_table.setItem(row_idx, 2, QTableWidgetItem(f"{tax.rate:.2f}"))
-            self.tax_table.setItem(row_idx, 3, QTableWidgetItem("Так" if tax.is_percent else "Ні"))
+            self.tax_table.setItem(row_idx, 2, FloatTableItem(f"{tax.rate:.2f}", float(tax.rate)))
+            self.tax_table.setItem(row_idx, 3, BoolTableItem("Так" if tax.is_percent else "Ні", tax.is_percent))
             self.tax_table.setItem(row_idx, 4, QTableWidgetItem(tax.applies_to))
-            self.tax_table.setItem(row_idx, 5, QTableWidgetItem("Так" if tax.is_active else "Ні"))
+            self.tax_table.setItem(row_idx, 5, BoolTableItem("Так" if tax.is_active else "Ні", tax.is_active))
             translated_payer = translate_payer(getattr(tax, 'payer', '—'))
             self.tax_table.setItem(row_idx, 6, QTableWidgetItem(translated_payer))
             self.tax_table.setItem(row_idx, 7, QTableWidgetItem(groups))

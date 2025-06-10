@@ -47,6 +47,8 @@ class MaintenanceCardDialog(QDialog):
             total_payment = record.material_cost + total_taxes
             form.addRow("Сума до оплати:", QLabel(f"{total_payment:.2f} грн"))
 
+            form.addRow("Статус:", QLabel(record.status))
+
             if record.service_desc:
                 self._add_divider(form)
                 self._add_section_title(form, "📝 Коментар")

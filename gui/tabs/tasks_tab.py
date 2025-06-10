@@ -8,6 +8,27 @@ from gui.dialogs.add_task_dialog import AddTaskDialog
 from gui.dialogs.edit_task_dialog import EditTaskDialog
 from gui.dialogs.task_card_dialog import TaskCardDialog
 
+class FloatTableItem(QTableWidgetItem):
+    def __init__(self, display_text: str, value: float):
+        super().__init__(display_text)
+        self.value = value
+
+    def __lt__(self, other):
+        if isinstance(other, FloatTableItem):
+            return self.value < other.value
+        return super().__lt__(other)
+
+
+class StringTableItem(QTableWidgetItem):
+    def __init__(self, display_text: str):
+        super().__init__(display_text.lower())
+        self.setText(display_text)
+
+    def __lt__(self, other):
+        if isinstance(other, StringTableItem):
+            return self.text().lower() < other.text().lower()
+        return super().__lt__(other)
+
 
 class TasksLoaderThread(QThread):
     data_loaded = pyqtSignal(list)
@@ -74,8 +95,10 @@ class TasksTab(QWidget):
         search_layout.addWidget(self.archive_checkbox)
 
         # Таблиця
-        self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(["Назва", "Статус", "Авто", "Спеціалізація", "Тривалість"])
+        self.table = QTableWidget(0, 7)
+        self.table.setHorizontalHeaderLabels([
+            "Назва", "Статус", "Авто", "Спеціалізація", "Тривалість", "Виконавець", "Дата видачі"
+        ])
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -116,12 +139,17 @@ class TasksTab(QWidget):
             query = self.search_edit.text().strip().lower()
             filtered = []
             for t in self.all_tasks:
-                car_info = f"{t.vehicle.brand} {t.vehicle.model}" if t.vehicle else ""
+                name = t.name.lower()
+                status = t.status.lower()
+                car_info = t.vehicle.number_plate.lower() if t.vehicle and t.vehicle.number_plate else ""
+                specialization = t.specialization.lower()
+                time_required = f"{t.time_required:.2f}".lower()
+                worker_name = t.assigned_worker.full_name.lower() if t.assigned_worker and t.assigned_worker.full_name else ""
+                issue_date = t.issue_date.strftime("%d.%m.%Y").lower() if t.issue_date else ""
+
                 search_string = " ".join([
-                    t.name.lower(),
-                    t.status.lower(),
-                    t.specialization.lower(),
-                    car_info.lower()
+                    name, status, car_info, specialization,
+                    time_required, worker_name, issue_date
                 ])
                 if query in search_string:
                     filtered.append(t)
@@ -131,27 +159,43 @@ class TasksTab(QWidget):
 
     def show_tasks(self, tasks):
         self.table.setRowCount(len(tasks))
+        self.table.setSortingEnabled(False)
+
         for i, t in enumerate(tasks):
-            car_info = f"{t.vehicle.brand} {t.vehicle.model}" if t.vehicle else "-"
-            self.table.setItem(i, 0, QTableWidgetItem(t.name))
-            self.table.setItem(i, 1, QTableWidgetItem(t.status))
-            self.table.setItem(i, 2, QTableWidgetItem(car_info))
-            self.table.setItem(i, 3, QTableWidgetItem(t.specialization))
-            self.table.setItem(i, 4, QTableWidgetItem(f"{t.time_required:.2f} год"))
+            car_info = t.vehicle.number_plate if t.vehicle else "-"
+            worker = t.assigned_worker.full_name if t.assigned_worker else "—"
+
+            item_name = QTableWidgetItem(t.name)
+            item_name.setData(Qt.ItemDataRole.UserRole, t.id)
+            self.table.setItem(i, 0, item_name)
+
+            self.table.setItem(i, 1, StringTableItem(t.status))
+            self.table.setItem(i, 2, StringTableItem(car_info))
+            self.table.setItem(i, 3, StringTableItem(t.specialization))
+            self.table.setItem(i, 4, FloatTableItem(f"{t.time_required:.2f} год", t.time_required))
+            self.table.setItem(i, 5, StringTableItem(worker))
+            issue_date_str = t.issue_date.strftime("%d.%m.%Y") if t.issue_date else "—"
+            self.table.setItem(i, 6, StringTableItem(issue_date_str))
+
+        self.table.setSortingEnabled(True)
 
     def get_selected_task(self):
         try:
-            selected = self.table.selectedItems()
-            if not selected:
+            selected_row = self.table.currentRow()
+            if selected_row < 0:
                 return None
-            row = selected[0].row()
-            task_name = self.table.item(row, 0).text()
-            for t in self.all_tasks:
-                if t.name == task_name:
-                    return t
-            return None
-        except Exception:
-            QMessageBox.critical(self, "Помилка", "Не вдалося отримати обрану задачу.")
+
+            item = self.table.item(selected_row, 0)
+            if not item:
+                return None
+
+            task_id = item.data(Qt.ItemDataRole.UserRole)
+            if task_id is None:
+                return None
+
+            return Task.get_or_none(Task.id == task_id)
+        except Exception as e:
+            QMessageBox.critical(self, "Помилка", f"Не вдалося отримати задачу:\n{e}")
             return None
 
     def open_add_task_dialog(self):

@@ -66,6 +66,11 @@ class EditMaintenanceDialog(QDialog):
 
         form.addRow("Група податків:", self.tax_group_combo)
 
+        self.status_combo = QComboBox()
+        self.status_combo.addItems(["new", "in progress", "completed"])
+        self.status_combo.setCurrentText(record.status)
+        form.addRow("Статус:", self.status_combo)
+
         self.comment_edit = QTextEdit(record.service_desc or "")
         form.addRow("Коментар:", self.comment_edit)
 
@@ -108,6 +113,7 @@ class EditMaintenanceDialog(QDialog):
                 None if self.tax_group_combo.currentIndex() == 0
                 else self.tax_groups[self.tax_group_combo.currentIndex() - 1]
             )
+            status = self.status_combo.currentText()
 
             self.record.vehicle = vehicle
             self.record.service_date = self.date_edit.date().toPyDate()
@@ -115,6 +121,7 @@ class EditMaintenanceDialog(QDialog):
             self.record.material_cost = self.cost_spin.value()
             self.record.tax_group = tax_group
             self.record.service_desc = self.comment_edit.toPlainText()
+            self.record.status = status
             self.record.save()
 
             self.accept()

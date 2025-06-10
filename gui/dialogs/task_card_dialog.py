@@ -6,29 +6,31 @@ from PyQt6.QtCore import Qt
 from models.task import Task
 from gui.dialogs.vehicle_card_dialog import VehicleCardDialog
 from gui.dialogs.maintenance_card_dialog import MaintenanceCardDialog
-from models.maintenance_record import MaintenanceRecord
 
 
 class TaskCardDialog(QDialog):
     """
     Діалогова картка для перегляду інформації про завдання з вкладками.
+
+    Args:
+        task (Task): Завдання для перегляду.
+        parent: Батьківський віджет.
+        disable_vehicle_open (bool): Якщо True — забороняє відкривати картку транспорту.
     """
 
-    def __init__(self, task: Task, parent=None):
+    def __init__(self, task: Task, parent=None, disable_vehicle_open: bool = False):
         super().__init__(parent)
         self.setWindowTitle(f"Картка задачі: {task.name}")
         self.setMinimumSize(600, 450)
         self.task = task
+        self.disable_vehicle_open = disable_vehicle_open
 
         try:
             layout = QVBoxLayout()
-
             tabs = QTabWidget()
-
             tabs.addTab(self._general_info_tab(), "Загальна")
             tabs.addTab(self._vehicle_tab(), "Транспорт")
             tabs.addTab(self._maintenance_tab(), "Обслуговування")
-
             layout.addWidget(tabs)
 
             btn_close = QPushButton("Закрити")
@@ -36,7 +38,6 @@ class TaskCardDialog(QDialog):
             layout.addWidget(btn_close)
 
             self.setLayout(layout)
-
         except Exception as e:
             QMessageBox.critical(self, "Помилка", f"Не вдалося завантажити картку задачі:\n{e}")
             self.reject()
@@ -49,6 +50,13 @@ class TaskCardDialog(QDialog):
         layout.addWidget(self._info_label("Тривалість:", f"{self.task.time_required:.2f} год"))
         layout.addWidget(self._info_label("Статус:", self.task.status))
         layout.addWidget(self._info_label("Спеціалізація:", self.task.specialization))
+
+        # Виводимо виконавця, якщо є
+        assigned_worker = (
+            self.task.assigned_worker.full_name
+            if self.task.assigned_worker else "Працівника ще не призначено"
+        )
+        layout.addWidget(self._info_label("Призначений виконавець:", assigned_worker))
 
         layout.addStretch()
         tab.setLayout(layout)
@@ -90,10 +98,13 @@ class TaskCardDialog(QDialog):
                 layout.addWidget(self._info_label("Дата:", str(self.task.maintenance.service_date)))
                 layout.addWidget(self._info_label("Тип послуги:", self.task.maintenance.service_type))
                 layout.addWidget(
-                    self._info_label("Вартість матеріалів:", f"{self.task.maintenance.material_cost:.2f} грн"))
-                layout.addWidget(self._info_label("Працівник:", self.task.maintenance.employee.full_name))
-
-
+                    self._info_label("Вартість матеріалів:", f"{self.task.maintenance.material_cost:.2f} грн")
+                )
+                employee_name = (
+                    self.task.maintenance.employee.full_name
+                    if self.task.maintenance.employee else "Працівника ще не призначено"
+                )
+                layout.addWidget(self._info_label("Працівник:", employee_name))
             else:
                 layout.addWidget(QLabel("Обслуговування не прив'язано."))
         except Exception:
@@ -117,7 +128,10 @@ class TaskCardDialog(QDialog):
 
     def open_vehicle_card(self):
         try:
-            dlg = VehicleCardDialog(self.task.vehicle, self)
+            if self.disable_vehicle_open:
+                QMessageBox.information(self, "Інформація", "Циклічне відкриття картки транспорту заблоковано.")
+                return
+            dlg = VehicleCardDialog(self.task.vehicle, parent=self)
             dlg.exec()
         except Exception as e:
             QMessageBox.critical(self, "Помилка", f"Не вдалося відкрити картку транспорту: {e}")

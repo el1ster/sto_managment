@@ -1,14 +1,12 @@
 from peewee import (
-    Model,
-    CharField,
-    FloatField,
-    DateTimeField,
-    BooleanField,
+    Model, CharField, FloatField, DateField, BooleanField,
     ForeignKeyField
 )
 from models.db import db
 from models.vehicle import Vehicle
 from models.maintenance_record import MaintenanceRecord
+from models.employee import Employee
+from datetime import date
 
 
 class Task(Model):
@@ -18,42 +16,28 @@ class Task(Model):
     Args:
         name (str): Назва завдання.
         time_required (float): Очікувана тривалість виконання (години).
-        status (str): Статус виконання (наприклад, 'pending').
-        archived_at (datetime): Дата архівації.
-        specialization (str): Спеціалізація виконавця (наприклад, "електрика").
-        in_queue (bool): Чи знаходиться завдання в черзі.
-        vehicle (Vehicle): Автомобіль, до якого належить завдання.
-        maintenance (MaintenanceRecord): Запис обслуговування, в рамках якого створено завдання.
-
-    Returns:
-        Task: Об'єкт завдання.
-
-    Raises:
-        peewee.IntegrityError: У випадку порушення зв'язків vehicle або maintenance.
+        status (str): Статус виконання.
+        specialization (str): Необхідна спеціалізація.
+        in_queue (bool): Чи в черзі на розподіл.
+        vehicle (Vehicle): Пов’язане авто.
+        maintenance (MaintenanceRecord): Пов’язане обслуговування.
+        assigned_worker (Employee): Призначений працівник (опційно).
+        is_archived (bool): Чи архівоване.
+        issue_date (date): Дата створення.
     """
-    name: str = CharField(max_length=100)
 
-    time_required: float = FloatField()
+    name = CharField(max_length=100)
+    time_required = FloatField()
+    status = CharField(max_length=50, default="pending")
+    specialization = CharField(max_length=255)
+    in_queue = BooleanField(default=True)
 
-    status: str = CharField(max_length=50, default="pending")
+    vehicle = ForeignKeyField(Vehicle, backref="tasks", column_name="vehicle_id")
+    maintenance = ForeignKeyField(MaintenanceRecord, backref="tasks", column_name="maintenance_id", null=True)
+    assigned_worker = ForeignKeyField(Employee, backref="tasks", column_name="assigned_worker_id", null=True)
 
-    is_archived: bool = BooleanField(default=False)
-
-    specialization: str = CharField(max_length=255)
-
-    in_queue: bool = BooleanField(default=True)
-
-    vehicle: Vehicle = ForeignKeyField(
-        Vehicle,
-        backref="tasks",
-        column_name="vehicle_id"
-    )
-
-    maintenance: MaintenanceRecord = ForeignKeyField(
-        MaintenanceRecord,
-        backref="tasks",
-        column_name="maintenance_id"
-    )
+    is_archived = BooleanField(default=False)
+    issue_date = DateField(default=date.today)
 
     class Meta:
         database = db

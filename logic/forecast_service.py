@@ -30,7 +30,7 @@ def generate_forecast(
         start_train_date: datetime,
         start_forecast_date: datetime,
         apply_seasonality: bool = False
-) -> pd.DataFrame:
+) -> Tuple[pd.DataFrame, dict]:
     """
     Генерує покроковий прогноз витрат із опціональною сезонністю.
 
@@ -42,7 +42,7 @@ def generate_forecast(
         apply_seasonality (bool): Чи застосовувати зовнішні сезонні коефіцієнти.
 
     Returns:
-        pd.DataFrame: Результати ['ds', 'y', 'adjusted_y'].
+        Tuple[pd.DataFrame, dict]: Результати ['ds', 'y', 'adjusted_y'] та словник коефіцієнтів.
     """
     df = df.copy()
     df["y"] = df["y"].astype(float)
@@ -89,4 +89,4 @@ def generate_forecast(
         ], ignore_index=True)
 
     result_df = pd.DataFrame(forecasts)
-    return result_df
+    return result_df, seasonal_coeffs

@@ -1,6 +1,49 @@
 from PyQt6.QtWidgets import QMessageBox
 from datetime import date
 import re
+from config import SPECIALIZATIONS
+
+
+def validate_specialization(spec: str, parent=None) -> bool:
+    """
+    Перевіряє, чи обрана спеціалізація є у списку допустимих.
+
+    Args:
+        spec (str): Обрана спеціалізація.
+        parent: Вікно-батько для QMessageBox.
+
+    Returns:
+        bool: True — якщо валідна, False — якщо ні.
+    """
+    if not spec:
+        QMessageBox.warning(parent, "Помилка", "Оберіть спеціалізацію.")
+        return False
+    if spec not in SPECIALIZATIONS:
+        QMessageBox.warning(parent, "Помилка", "Недопустима спеціалізація.")
+        return False
+    return True
+
+
+def validate_max_hours(value: str, parent=None) -> bool:
+    """
+    Перевіряє коректність введеного навантаження.
+
+    Args:
+        value (str): Введене значення (очікується число).
+        parent: Вікно-батько для QMessageBox.
+
+    Returns:
+        bool: True — якщо валідне число > 0, False — якщо ні.
+    """
+    try:
+        hours = float(value)
+        if hours <= 0:
+            QMessageBox.warning(parent, "Помилка", "Навантаження має бути більше за 0.")
+            return False
+        return True
+    except ValueError:
+        QMessageBox.warning(parent, "Помилка", "Навантаження має бути числом.")
+        return False
 
 
 def validate_phone(phone: str, parent=None) -> bool:

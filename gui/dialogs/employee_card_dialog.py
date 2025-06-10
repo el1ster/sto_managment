@@ -4,8 +4,8 @@ from PyQt6.QtWidgets import (
 from models.employee import Employee
 from models.salary_record import SalaryRecord
 from models.user import User
+from models.task import Task
 from models.optimization_worker import OptimizationWorker
-from models.assignment import Assignment
 from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem
 from gui.dialogs.task_card_dialog import TaskCardDialog
 from gui.dialogs.salary_card_dialog import SalaryCardDialog
@@ -40,6 +40,17 @@ class EmployeeCardDialog(QDialog):
             form.addRow("Посада:", QLabel(employee.position.name if employee.position else "-"))
             form.addRow("Дата прийому:", QLabel(str(employee.hire_date) if employee.hire_date else "-"))
             form.addRow("Статус:", QLabel("Активний" if employee.is_active else "Деактивований"))
+
+            # Додатково: Спеціалізація, кваліфікація, навантаження
+            opt = OptimizationWorker.get_or_none(OptimizationWorker.employee == employee)
+            specialization = opt.specialization if opt else "—"
+            qualification = str(opt.qualification) if opt and opt.qualification else "—"
+            max_hours = f"{opt.max_hours:.0f}" if opt and opt.max_hours else "—"
+
+            form.addRow("Спеціалізація:", QLabel(specialization))
+            form.addRow("Кваліфікація:", QLabel(qualification))
+            form.addRow("Макс. навантаження:", QLabel(max_hours + " год/день"))
+
             main_tab.setLayout(form)
             tabs.addTab(main_tab, "Основне")
         except Exception as e:
@@ -52,32 +63,36 @@ class EmployeeCardDialog(QDialog):
         # --- Задачі ---
         tasks_tab = QWidget()
         try:
-            worker = OptimizationWorker.get_or_none(OptimizationWorker.employee == employee)
             table = QTableWidget()
             table.setColumnCount(3)
             table.setHorizontalHeaderLabels(["Назва", "Статус", "ID"])
             table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
-            if worker:
-                assignments = Assignment.select().where(Assignment.worker == worker)
-                tasks = [a.task for a in assignments]
-                table.setRowCount(len(tasks))
-                for i, task in enumerate(tasks):
-                    table.setItem(i, 0, QTableWidgetItem(task.name))
-                    table.setItem(i, 1, QTableWidgetItem(task.status))
-                    table.setItem(i, 2, QTableWidgetItem(str(task.id)))
+            # Пошук задач, де обраний працівник є виконавцем
+            tasks = Task.select().where(Task.assigned_worker == employee)
+            table.setRowCount(len(tasks))
+
+            for i, task in enumerate(tasks):
+                table.setItem(i, 0, QTableWidgetItem(task.name))
+                table.setItem(i, 1, QTableWidgetItem(task.status))
+                table.setItem(i, 2, QTableWidgetItem(str(task.id)))
+
+            if tasks:
                 table.cellDoubleClicked.connect(lambda row, col: self.open_task_card(tasks[row]))
             else:
                 table.setRowCount(1)
-                table.setItem(0, 0, QTableWidgetItem("Цей працівник не зареєстрований як виконавець."))
+                table.setItem(0, 0, QTableWidgetItem("Немає призначених задач."))
+                table.setSpan(0, 0, 1, 3)
 
             tasks_tab.setLayout(QVBoxLayout())
             tasks_tab.layout().addWidget(table)
+
         except Exception as ex:
             tasks_tab.setLayout(QVBoxLayout())
             tasks_tab.layout().addWidget(QLabel(f"Помилка отримання задач: {ex}"))
 
-        tabs.addTab(tasks_tab, "Задачі")
+        if employee.position and employee.position.name.lower() in ["механік", "майстер"]:
+            tabs.addTab(tasks_tab, "Задачі")
 
         # --- Зарплата ---
         salary_tab = QWidget()

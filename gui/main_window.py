@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import QMainWindow, QTabWidget, QMessageBox, QApplication
+from PyQt6.QtCore import QTimer
 from gui.tabs.users_tab import UsersTab
 from gui.tabs.employees_tab import EmployeesTab
 from gui.tabs.finance_tab import FinanceTab
@@ -6,6 +7,8 @@ from gui.tabs.tasks_tab import TasksTab
 from gui.tabs.optimization_tab import OptimizationTab
 from gui.tabs.logs_tab import LogsTab
 from gui.tabs.transport_tab import TransportTab
+from gui.tabs.maintenance_execution_tab import MaintenanceExecutionTab
+
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -27,17 +30,19 @@ class MainWindow(QMainWindow):
         try:
             self.setWindowTitle(config.APP_NAME)
             self.resize(*config.DEFAULT_WINDOW_SIZE)
+            self.show()  # ⬅️ Спочатку звичайне вікно
+            QTimer.singleShot(10, self.showMaximized)  # ⬅️ Потім — повноекранний режим із затримкою
 
             self.tab_widget = QTabWidget(self)
             self.setCentralWidget(self.tab_widget)
 
             self.tab_widget.addTab(UsersTab(self.current_user, main_window=self), "Користувачі")
             self.tab_widget.addTab(EmployeesTab(self.current_user, main_window=self), "Працівники")
-            self.tab_widget.addTab(TransportTab(self.current_user, main_window=self), "Транспорт")  # <-- НОВА ВКЛАДКА
+            self.tab_widget.addTab(TransportTab(self.current_user, main_window=self), "Транспорт")
+            self.tab_widget.addTab(MaintenanceExecutionTab(self), "Обслуговування")
             self.tab_widget.addTab(FinanceTab(self.current_user, main_window=self), "Фінанси")
             self.tab_widget.addTab(TasksTab(self.current_user, main_window=self), "Задачі")
             self.tab_widget.addTab(OptimizationTab(self.current_user, main_window=self), "Оптимізація")
-            # self.tab_widget.addTab(PartsTab(self.current_user, main_window=self), "Запчастини")
             self.tab_widget.addTab(LogsTab(self.current_user, main_window=self), "Логи")
 
             self.statusBar().showMessage(

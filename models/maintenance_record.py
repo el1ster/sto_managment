@@ -12,6 +12,8 @@ from models.vehicle import Vehicle
 from models.employee import Employee
 from models.tax_group import TaxGroup
 
+MAINTENANCE_STATUSES = ["new", "in progress", "completed"]
+
 
 class MaintenanceRecord(Model):
     """
@@ -57,7 +59,7 @@ class MaintenanceRecord(Model):
         null=False
     )
 
-    service_type: str = CharField(max_length=100,null=False)
+    service_type: str = CharField(max_length=100, null=False)
 
     service_desc: str = TextField(null=True)
 
@@ -66,6 +68,12 @@ class MaintenanceRecord(Model):
         backref="maintenance_records",
         column_name="tax_group_id",
         null=True
+    )
+
+    status: str = CharField(
+        max_length=20,
+        default="new",
+        constraints=[]  # опціонально: можна обмежити через CHECK (якщо хочеш)
     )
 
     class Meta:

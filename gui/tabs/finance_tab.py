@@ -1,10 +1,10 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTabWidget, QLabel
 
-from gui.tabs.accounting_table import AccountingTab
-from gui.tabs.tax_tab import TaxViewTab
-from gui.tabs.salaries_tab import SalariesTab
-from gui.tabs.maintenance_tab import MaintenanceTab
-from gui.tabs.forecast_tab import ForecastTab
+from gui.tabs.finance.accounting_table import AccountingTab
+from gui.tabs.finance.tax_tab import TaxViewTab
+from gui.tabs.finance.salaries_tab import SalariesTab
+from gui.tabs.finance.maintenance_tab import MaintenanceTab
+from gui.tabs.finance.forecast_tab import ForecastTab
 
 
 class FinanceTab(QWidget):

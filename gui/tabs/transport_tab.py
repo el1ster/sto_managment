@@ -62,8 +62,8 @@ class TransportTab(QWidget):
         search_layout.addWidget(QLabel("Пошук:"))
         search_layout.addWidget(self.search_edit)
 
-        self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(["Назва", "Номер", "Тип", "Рік", "VIN"])
+        self.table = QTableWidget(0, 6)
+        self.table.setHorizontalHeaderLabels(["Назва", "Номер", "Тип", "Рік", "VIN", "Пробіг (км)"])
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -72,6 +72,7 @@ class TransportTab(QWidget):
         self.table.doubleClicked.connect(self.show_vehicle_card)
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.setSortingEnabled(True)
 
         main_layout.addLayout(btn_layout)
         main_layout.addLayout(search_layout)
@@ -107,7 +108,8 @@ class TransportTab(QWidget):
                     v.number_plate.lower() if v.number_plate else "",
                     v.vehicle_type.lower() if v.vehicle_type else "",
                     str(v.year) if v.year else "",
-                    v.vin.lower() if v.vin else ""
+                    v.vin.lower() if v.vin else "",
+                    str(v.mileage) if hasattr(v, "mileage") and v.mileage is not None else ""
                 ])
                 if query in search_string:
                     filtered.append(v)
@@ -116,6 +118,7 @@ class TransportTab(QWidget):
             QMessageBox.critical(self, "Помилка", "Помилка при фільтрації транспорту.")
 
     def show_vehicles(self, vehicles):
+        self.table.setSortingEnabled(False)
         self.table.setRowCount(len(vehicles))
         for i, v in enumerate(vehicles):
             self.table.setItem(i, 0, QTableWidgetItem(f"{v.brand} {v.model}"))
@@ -123,6 +126,8 @@ class TransportTab(QWidget):
             self.table.setItem(i, 2, QTableWidgetItem(v.vehicle_type or "-"))
             self.table.setItem(i, 3, QTableWidgetItem(str(v.year) if v.year else "-"))
             self.table.setItem(i, 4, QTableWidgetItem(v.vin or "-"))
+            self.table.setItem(i, 5, QTableWidgetItem(str(v.mileage) if hasattr(v, "mileage") and v.mileage is not None else "-"))
+        self.table.setSortingEnabled(True)
 
     def get_selected_vehicle(self):
         try:
@@ -160,7 +165,6 @@ class TransportTab(QWidget):
                 QMessageBox.warning(self, "Помилка", "Оберіть транспорт для видалення.")
                 return
 
-            # 🔍 Перевірка обслуговування
             if MaintenanceRecord.select().where(MaintenanceRecord.vehicle == vehicle).exists():
                 QMessageBox.warning(
                     self, "Видалення неможливе",
@@ -168,7 +172,6 @@ class TransportTab(QWidget):
                 )
                 return
 
-            # 🔍 Перевірка задач
             if Task.select().where(Task.vehicle == vehicle).exists():
                 QMessageBox.warning(
                     self, "Видалення неможливе",

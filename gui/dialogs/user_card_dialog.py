@@ -6,7 +6,6 @@ from models.employee import Employee
 from gui.dialogs.add_employee_dialog import AddEmployeeDialog
 from gui.dialogs.employee_card_dialog import EmployeeCardDialog
 from gui.dialogs.select_employee_dialog import SelectEmployeeDialog
-from models.assignment import Assignment
 from models.salary_record import SalaryRecord
 from models.optimization_worker import OptimizationWorker
 

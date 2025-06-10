@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton,
-    QMessageBox, QDateEdit, QCheckBox, QHBoxLayout
+    QMessageBox, QDateEdit, QCheckBox, QHBoxLayout, QSpinBox
 )
 from PyQt6.QtCore import QDate
 from models.employee import Employee
@@ -12,6 +12,8 @@ from logic.validators import (
     validate_full_name, validate_phone, validate_email, validate_hire_date, validate_username, validate_password
 )
 from gui.dialogs.password_generator_dialog import PasswordGeneratorDialog
+from config import SPECIALIZATIONS
+from models.optimization_worker import OptimizationWorker
 
 
 class EditEmployeeDialog(QDialog):
@@ -52,6 +54,41 @@ class EditEmployeeDialog(QDialog):
             except Exception:
                 QMessageBox.critical(self, "Помилка", "Не вдалося завантажити список посад.")
                 self.positions = []
+
+            self.specialization_label = QLabel("Спеціалізація (для механіка/майстра):")
+            self.specialization_combo = QComboBox()
+            self.specialization_combo.addItems(SPECIALIZATIONS)
+
+            self.qualification_label = QLabel("Кваліфікація:")
+            self.qualification_input = QSpinBox()
+            self.qualification_input.setRange(1, 5)
+
+            self.max_hours_label = QLabel("Максимальне навантаження (год/день):")
+            self.max_hours_edit = QLineEdit()
+            self.max_hours_edit.setPlaceholderText("годин на день")
+
+            self.specialization_label.setEnabled(False)
+            self.specialization_combo.setEnabled(False)
+
+            self.qualification_label.setEnabled(False)
+            self.qualification_input.setEnabled(False)
+
+            self.max_hours_label.setEnabled(False)
+            self.max_hours_edit.setEnabled(False)
+
+            # Спроба завантажити OptimizationWorker
+            self.optimization_entry = OptimizationWorker.get_or_none(OptimizationWorker.employee == self.employee)
+            if self.optimization_entry:
+                if self.employee.position.name.lower() in ["механік", "майстер"]:
+                    self.specialization_combo.setCurrentText(self.optimization_entry.specialization)
+                    self.max_hours_edit.setText(str(self.optimization_entry.max_hours or ""))
+                    self.qualification_input.setValue(self.optimization_entry.qualification or 1)
+                    self.specialization_label.setEnabled(False)
+                    self.specialization_combo.setEnabled(False)
+                    self.max_hours_label.setEnabled(False)
+                    self.max_hours_edit.setEnabled(False)
+
+            self.position_combo.currentIndexChanged.connect(self.on_position_changed)
 
             self.active_checkbox = QCheckBox("Активний")
             self.active_checkbox.setChecked(employee.is_active)
@@ -149,11 +186,29 @@ class EditEmployeeDialog(QDialog):
             self.role_label.hide()
             self.role_combo.hide()
 
+            layout.addSpacing(10)
+            layout.addWidget(self.specialization_label)
+            layout.addWidget(self.specialization_combo)
+
+            layout.addWidget(self.qualification_label)
+            layout.addWidget(self.qualification_input)
+
+            layout.addWidget(self.max_hours_label)
+            layout.addWidget(self.max_hours_edit)
+
+
+            # Зробити неактивними за замовчуванням
+            self.specialization_label.setEnabled(False)
+            self.specialization_combo.setEnabled(False)
+            self.max_hours_label.setEnabled(False)
+            self.max_hours_edit.setEnabled(False)
+
             self.save_btn = QPushButton("Зберегти зміни")
             self.save_btn.clicked.connect(self.save_employee)
             layout.addWidget(self.save_btn)
 
             self.setLayout(layout)
+            self.on_position_changed()
 
         except Exception as e:
             QMessageBox.critical(None, "Помилка", f"Не вдалося ініціалізувати вікно: {e}")
@@ -237,7 +292,13 @@ class EditEmployeeDialog(QDialog):
             phone = self.phone_edit.text().strip()
             email = self.email_edit.text().strip()
             hire_date = self.hire_date_edit.date().toPyDate()
-            position = self.positions[self.position_combo.currentIndex()]
+            position_index = self.position_combo.currentIndex()
+            qualification = self.qualification_input.value()
+            if position_index < 0:
+                QMessageBox.warning(self, "Помилка", "Оберіть посаду для працівника.")
+                return
+            position = self.positions[position_index]
+
             is_active = self.active_checkbox.isChecked()
 
             if not validate_full_name(full_name, parent=self): return
@@ -288,7 +349,39 @@ class EditEmployeeDialog(QDialog):
             self.employee.position = position
             self.employee.is_active = is_active
             self.employee.user = user
+            self.optimization_entry.qualification = qualification
             self.employee.save()
+
+            # === Оновлення або створення OptimizationWorker ===
+            if position.name.lower() in ["механік", "майстер"]:
+                specialization = self.specialization_combo.currentText()
+                max_hours_str = self.max_hours_edit.text().strip()
+
+                from logic.validators import validate_specialization, validate_max_hours
+
+                if not validate_specialization(specialization, parent=self):
+                    return
+
+                if not validate_max_hours(max_hours_str, parent=self):
+                    return
+
+                max_hours = float(max_hours_str)
+
+                if self.optimization_entry:
+                    self.optimization_entry.specialization = specialization
+                    self.optimization_entry.max_hours = max_hours
+                    self.optimization_entry.qualification = qualification
+                    self.optimization_entry.save()
+                else:
+                    OptimizationWorker.create(
+                        employee=self.employee,
+                        specialization=specialization,
+                        max_hours=max_hours,
+                        workload=0.0
+                    )
+            else:
+                if self.optimization_entry:
+                    self.optimization_entry.delete_instance()
 
             QMessageBox.information(self, "Успіх", "Дані працівника оновлено.")
             self.accept()
@@ -301,3 +394,20 @@ class EditEmployeeDialog(QDialog):
         """
         phone = self.phone_edit.text().strip()
         validate_phone(phone, parent=self)
+
+    def on_position_changed(self):
+        index = self.position_combo.currentIndex()
+        if index < 0 or index >= len(self.positions):
+            return
+
+        selected = self.positions[index].name.lower()
+        is_mech_or_master = selected in ["механік", "майстер"]
+
+        self.specialization_label.setEnabled(is_mech_or_master)
+        self.specialization_combo.setEnabled(is_mech_or_master)
+        self.max_hours_label.setEnabled(is_mech_or_master)
+        self.max_hours_edit.setEnabled(is_mech_or_master)
+        self.qualification_label.setEnabled(is_mech_or_master)
+        self.qualification_input.setEnabled(is_mech_or_master)
+
+

@@ -49,17 +49,18 @@ class VehicleCardDialog(QDialog):
         layout.addLayout(search_layout)
 
         self.maintenance_table = QTableWidget()
-        self.maintenance_table.setColumnCount(5)
+        self.maintenance_table.setColumnCount(6)
         self.maintenance_table.setHorizontalHeaderLabels([
-            "Дата", "Працівник", "Тип послуги", "Вартість матеріалів", "Пробіг (км)"
+            "Дата", "Працівник", "Тип послуги", "Вартість матеріалів", "Пробіг (км)", "К-сть задач"
         ])
+        self.maintenance_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
         self.maintenance_records = list(MaintenanceRecord.select().where(
             MaintenanceRecord.vehicle == self.vehicle
         ))
 
         self.maintenance_search_input.textChanged.connect(self.apply_maintenance_filter)
-        self.maintenance_table.cellDoubleClicked.connect(
+        self.maintenance_table.cellActivated.connect(
             lambda row, _: self.open_maintenance_card(self.filtered_maintenance_records[row])
         )
 
@@ -85,10 +86,11 @@ class VehicleCardDialog(QDialog):
         self.task_table.setHorizontalHeaderLabels([
             "Назва", "Статус", "Спеціалізація", "Тривалість (год)"
         ])
+        self.task_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
         self.tasks = list(Task.select().where(Task.vehicle == self.vehicle))
         self.task_search_input.textChanged.connect(self.apply_task_filter)
-        self.task_table.cellDoubleClicked.connect(
+        self.task_table.cellActivated.connect(
             lambda row, _: self.open_task_card(self.filtered_tasks[row])
         )
 
@@ -115,11 +117,14 @@ class VehicleCardDialog(QDialog):
 
             self.maintenance_table.setRowCount(len(self.filtered_maintenance_records))
             for i, r in enumerate(self.filtered_maintenance_records):
+                task_count = Task.select().where(Task.maintenance == r).count()
                 self.maintenance_table.setItem(i, 0, QTableWidgetItem(str(r.service_date)))
                 self.maintenance_table.setItem(i, 1, QTableWidgetItem(r.employee.full_name if r.employee else "-"))
                 self.maintenance_table.setItem(i, 2, QTableWidgetItem(r.service_type))
                 self.maintenance_table.setItem(i, 3, QTableWidgetItem(f"{r.material_cost:.2f} грн"))
                 self.maintenance_table.setItem(i, 4, QTableWidgetItem(f"{r.mileage or 0} км"))
+                self.maintenance_table.setItem(i, 5, QTableWidgetItem(str(task_count)))
+
         except Exception as ex:
             QMessageBox.critical(self, "Помилка", f"Помилка при фільтрації: {ex}")
 
@@ -149,16 +154,17 @@ class VehicleCardDialog(QDialog):
 
     def open_maintenance_card(self, record):
         try:
-            from gui.dialogs.maintenance_card_dialog import MaintenanceCardDialog
-            dlg = MaintenanceCardDialog(record, self)
+            from gui.dialogs.maintenance_info_card_dialog import MaintenanceInfoCardDialog
+            dlg = MaintenanceInfoCardDialog(record, self)
             dlg.exec()
         except Exception as e:
             QMessageBox.critical(self, "Помилка", f"Не вдалося відкрити обслуговування: {e}")
 
     def open_task_card(self, task):
         try:
-            from gui.dialogs.task_card_dialog import TaskCardDialog
-            dlg = TaskCardDialog(task, self)
+            from gui.dialogs.task_card_dialog import TaskCardDialog  # 🔁 локальний імпорт
+            dlg = TaskCardDialog(task, parent=self, disable_vehicle_open=True)
             dlg.exec()
         except Exception as e:
             QMessageBox.critical(self, "Помилка", f"Не вдалося відкрити задачу: {e}")
+

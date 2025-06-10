@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QDoubleSpinBox, QTextEdit, QPushButton, QMessageBox
 )
 from datetime import date
-from models.maintenance_record import MaintenanceRecord
+from models.maintenance_record import MaintenanceRecord, MAINTENANCE_STATUSES
 from models.vehicle import Vehicle
 from models.tax_group import TaxGroup
 
@@ -52,6 +52,10 @@ class AddMaintenanceDialog(QDialog):
         self.tax_group_combo.addItems([g.group_name for g in self.tax_groups])
         form.addRow("Група податків:", self.tax_group_combo)
 
+        self.status_combo = QComboBox()
+        self.status_combo.addItems(["new", "in progress", "completed"])
+        form.addRow("Статус:", self.status_combo)
+
         self.comment_edit = QTextEdit()
         form.addRow("Коментар:", self.comment_edit)
 
@@ -84,14 +88,18 @@ class AddMaintenanceDialog(QDialog):
                 else self.tax_groups[self.tax_group_combo.currentIndex() - 1]
             )
 
+            status = self.status_combo.currentText()
+
             MaintenanceRecord.create(
                 vehicle=vehicle,
                 service_date=self.date_edit.date().toPyDate(),
                 service_type=self.type_input.text().strip(),
                 material_cost=self.cost_spin.value(),
                 tax_group=tax_group,
-                comment=self.comment_edit.toPlainText()
+                comment=self.comment_edit.toPlainText(),
+                status=status
             )
+
             self.accept()
         except Exception as e:
             QMessageBox.critical(self, "Помилка", f"Не вдалося зберегти запис: {e}")
